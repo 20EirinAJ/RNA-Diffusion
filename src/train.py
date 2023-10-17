@@ -12,13 +12,16 @@ def train():
     data = load_data(
         data_path="src/dnadiffusion/data/K562_hESCT0_HepG2_GM12878_12k_sequences_per_group.txt",
         saved_data_path="src/dnadiffusion/data/encode_data.pkl",
+        # サブセットリスト。読み込むデータには以下4つのセルタイプタグが含まれる。それを全て指定して訓練データとしている。
         subset_list=[
             "GM12878_ENCLB441ZZZ",
             "hESCT0_ENCLB449ZZZ",
             "K562_ENCLB843GMH",
             "HepG2_ENCLB029COU",
         ],
+        # 0にすると全てのデータを使う。1000にすると1000個のデータを使う。
         limit_total_sequences=0,
+        # どういう変数？
         num_sampling_to_compare_cells=1000,
         load_saved_data=True,
     )

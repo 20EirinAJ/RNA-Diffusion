@@ -120,6 +120,12 @@ def generate_motifs_and_fastas(
     print("Generating Motifs and Fastas...", name)
     print("---" * 10)
 
+    """_summary_
+
+    :return: _description_
+    :rtype: _type_
+    """
+
     # Saving fasta
     if subset_list:
         fasta_path = save_fasta(df, f"{name}_{'_'.join([str(c) for c in subset_list])}", num_sequences)
@@ -155,24 +161,38 @@ def preprocess_data(
     df = pd.read_csv(input_csv, sep="\t")
 
     # Subsetting the dataframe
+    # サブセットリストにあるタグのみを抽出する。
     if subset_list:
         print(" or ".join([f"TAG == {c}" for c in subset_list]))
         df = df.query(" or ".join([f'TAG == "{c}" ' for c in subset_list]))
         print("Subsetting...")
 
     # Limiting the total number of sequences
+    # シーケンス総数の制限
     if limit_total_sequences > 0:
         print(f"Limiting total sequences to {limit_total_sequences}")
         df = df.sample(limit_total_sequences)
 
     # Creating train/test/shuffle groups
+    # chr 列が "chr1" であるすべての行を抽出して新しいデータフレーム df_test を作成します。
     df_test = df[df["chr"] == "chr1"].reset_index(drop=True)
+
+    # chr 列が "chr2" であるすべての行を抽出して新しいデータフレーム df_train_shuffled を作成します。
     df_train_shuffled = df[df["chr"] == "chr2"].reset_index(drop=True)
+
+    # chr 列が "chr1" または "chr2" でないすべての行を抽出して新しいデータフレーム df_train を作成します。
     df_train = df_train = df[(df["chr"] != "chr1") & (df["chr"] != "chr2")].reset_index(drop=True)
 
+    # df_train_shuffled の sequence 列のDNA配列をランダムに並び替えます。
     df_train_shuffled["sequence"] = df_train_shuffled["sequence"].apply(
         lambda x: "".join(random.sample(list(x), len(x)))
     )
+    '''
+    df_train_shuffledについて
+    バックグラウンドモデルがあれば、観測されたデータ（例えば、特定のモチーフが特定の領域に集中している、
+    あるいは特定のタンパク質間に強い相互作用があるなど）が、
+    単なる偶然によるものなのか、それとも何らかの生物学的な意味を持つのかを統計的に評価できます。
+    '''
 
     # Getting motif information from the sequences
     train = generate_motifs_and_fastas(df_train, "train", number_of_sequences_to_motif_creation, subset_list)

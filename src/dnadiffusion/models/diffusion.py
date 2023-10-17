@@ -73,6 +73,8 @@ class Diffusion(nn.Module):
             classes = classes.repeat(2)
             context_mask = context_mask.repeat(2)
             context_mask[n_sample:] = 0.0
+
+            # self.p_sample_guidedの引数にclasses,cond_weight,context_maskを渡す。x, t, t_indexは他で定義されている。
             sampling_fn = partial(
                 self.p_sample_guided,
                 classes=classes,
@@ -83,6 +85,7 @@ class Diffusion(nn.Module):
         else:
             sampling_fn = partial(self.p_sample)
 
+        # 拡散か逆拡散のループ。tがタイムステップ。
         for i in reversed(range(0, self.timesteps)):
             img, cross_matrix = sampling_fn(x=img, t=torch.full((b,), i, device=device, dtype=torch.long), t_index=i)
             imgs.append(img.cpu().numpy())
