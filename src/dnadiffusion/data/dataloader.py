@@ -32,6 +32,8 @@ def load_data(
             encode_data = pickle.load(f)
 
     else:
+    # encode_data には、generate_motifs_and_fastas 関数で生成されたデータが格納されています。
+    # このデータは辞書として保存されており、レーニング、テスト、およびシャッフルデータセットに関連する情報を含みます。
         encode_data = preprocess_data(
             input_csv=data_path,
             subset_list=subset_list,
@@ -40,18 +42,31 @@ def load_data(
         )
 
     # Splitting enocde data into train/test/shuffle
+    # "train" キーでアクセスした後、さらに "motifs" キーでアクセスすることで、
+    # トレーニングデータセットに関連するモチーフ情報にアクセスできる。
+
+    # トレーニングデータセットのモチーフ情報にアクセス
     train_motifs = encode_data["train"]["motifs"]
     train_motifs_cell_specific = encode_data["train"]["final_subset_motifs"]
 
+    # テストデータセットのモチーフ情報にアクセス
     test_motifs = encode_data["test"]["motifs"]
     test_motifs_cell_specific = encode_data["test"]["final_subset_motifs"]
 
+    # シャッフルデータセットのモチーフ情報にアクセス
     shuffle_motifs = encode_data["train_shuffled"]["motifs"]
     shuffle_motifs_cell_specific = encode_data["train_shuffled"]["final_subset_motifs"]
 
+    # データセットのモチーフ情報を収集しました
+
     # Creating sequence dataset
+    # シーケンスデータセットを作成
+
+    # トレーニングデータセットからデータを取得
     df = encode_data["train"]["df"]
     nucleotides = ["A", "C", "G", "T"]
+
+    # DNAシーケンスをOne-Hotエンコード
     x_train_seq = np.array([one_hot_encode(x, nucleotides, 200) for x in df["sequence"] if "N" not in x])
     X_train = np.array([x.T.tolist() for x in x_train_seq])
     X_train[X_train == 0] = -1
@@ -63,6 +78,7 @@ def load_data(
     x_train_cell_type = torch.tensor([tag_to_numeric[x] for x in df["TAG"]])
 
     # Collecting variables into a dict
+    # 変数を辞書にまとめなおす。
     encode_data_dict = {
         "train_motifs": train_motifs,
         "train_motifs_cell_specific": train_motifs_cell_specific,
@@ -77,31 +93,80 @@ def load_data(
         "x_train_cell_type": x_train_cell_type,
     }
 
+    # シーケンスデータセットと関連情報を含む辞書を返す
     return encode_data_dict
 
 
 def motifs_from_fasta(fasta: str):
+    """外部サービスを使ってモチーフを計算する。
+    generate_motifs_and_fastas 関数で使用される。
+
+    :param fasta: _description_
+    :type fasta: str
+    :return: _description_
+    :rtype: _type_
+    """
     print("Computing Motifs....")
+
+    # 外部サービスを使ってモチーフを計算する。
     os.system(f"gimme scan {fasta} -p  JASPAR2020_vertebrates -g hg38 -n 20> train_results_motifs.bed")
+
+    # 計算結果のファイルを読み込んで、モチーフ列を抽出する。
     df_results_seq_guime = pd.read_csv("train_results_motifs.bed", sep="\t", skiprows=5, header=None)
+
+
+    print(df_results_seq_guime.head())
+
     df_results_seq_guime["motifs"] = df_results_seq_guime[8].apply(lambda x: x.split('motif_name "')[1].split('"')[0])
 
+    # 各モチーフが何回出現したかカウントする。
     df_results_seq_guime[0] = df_results_seq_guime[0].apply(lambda x: "_".join(x.split("_")[:-1]))
     df_results_seq_guime_count_out = df_results_seq_guime[[0, "motifs"]].groupby("motifs").count()
+
+    # どんなデータフレームか確認する。
+    print(df_results_seq_guime_count_out.head())
+
     return df_results_seq_guime_count_out
 
 
 def save_fasta(df: pd.DataFrame, name: str, num_sequences: int, seq_to_subset_comp: bool = False) -> str:
+    """与えられたデータフレーム（df）からFASTAファイルを生成し、保存する。
+    generate_motifs_and_fastas 関数で使用される。
+
+    :param df: _description_
+    :type df: pd.DataFrame
+    :param name: _description_
+    :type name: str
+    :param num_sequences: _description_
+    :type num_sequences: int
+    :param seq_to_subset_comp: _description_, defaults to False
+    :type seq_to_subset_comp: bool, optional
+    :return: _description_
+    :rtype: str
+    """
+
+
     fasta_path = f"{name}.fasta"
+    # 生成するFASTAファイルを書き込みモードで開きます。これにより、ファイルへの書き込みが可能。
     save_fasta_file = open(fasta_path, "w")
+
+    # データフレーム df の行数を取得し、num_to_sample として保持
+    # この値はサンプリングするシーケンスの数を制御
     num_to_sample = df.shape[0]
 
     # Subsetting sequences
+    # num_sequences が非ゼロかつ seq_to_subset_comp が True の場合に、
+    # サンプリングするシーケンス数を num_sequences に設定します。
+    # それ以外の場合はデータフレーム内のすべてのシーケンスを使用します。
     if num_sequences and seq_to_subset_comp:
         num_to_sample = num_sequences
 
     # Sampling sequences
     print(f"Sampling {num_to_sample} sequences")
+
+    # fastaファイルに書き込む文字列を生成する。
+    # FASTA形式のエントリーを作成しています。各エントリーは > で始まり、
+    # シーケンス名やタグ、実際のシーケンスデータを含みます。
     write_fasta_component = "\n".join(
         df[["dhs_id", "sequence", "TAG"]]
         .head(num_to_sample)
@@ -117,36 +182,51 @@ def save_fasta(df: pd.DataFrame, name: str, num_sequences: int, seq_to_subset_co
 def generate_motifs_and_fastas(
     df: pd.DataFrame, name: str, num_sequences: int, subset_list: Optional[List] = None
 ) -> Dict[str, Any]:
+    """与えられたデータフレーム（df）からモチーフとFASTAファイルを生成する関数。
+    preprocess_data 関数で使用される。
+
+    :param df: preprocess_data 関数で生成されたデータフレーム。訓練、テスト、シャッフル
+    :type df: pd.DataFrame
+    :param name: _description_
+    :type name: str
+    :param num_sequences: _description_
+    :type num_sequences: int
+    :param subset_list: _description_, defaults to None
+    :type subset_list: Optional[List], optional
+    :return: _description_
+    :rtype: Dict[str, Any]
+    """
+
     print("Generating Motifs and Fastas...", name)
     print("---" * 10)
 
-    """_summary_
 
-    :return: _description_
-    :rtype: _type_
-    """
 
     # Saving fasta
     if subset_list:
         fasta_path = save_fasta(df, f"{name}_{'_'.join([str(c) for c in subset_list])}", num_sequences)
     else:
         fasta_path = save_fasta(df, name, num_sequences)
+    
 
-    # Computing motifs
+    # motifs_from_fasta 関数を使って、FASTAファイルからモチーフを計算します。
     motifs = motifs_from_fasta(fasta_path)
 
     # Generating subset specific motifs
     final_subset_motifs = {}
+
+    #  データフレーム df を "TAG" 列でグループ化し、各サブセットに対して以下の処理を行います。
     for comp, v_comp in df.groupby("TAG"):
         print(comp)
         c_fasta = save_fasta(v_comp, f"{name}_{comp}", num_sequences, seq_to_subset_comp=True)
         final_subset_motifs[comp] = motifs_from_fasta(c_fasta)
 
+    # 辞書型で返す。
     return {
-        "fasta_path": fasta_path,
-        "motifs": motifs,
-        "final_subset_motifs": final_subset_motifs,
-        "df": df,
+        "fasta_path": fasta_path,                   # FASTAファイルのパス
+        "motifs": motifs,                           # モチーフ
+        "final_subset_motifs": final_subset_motifs, # サブセット特有のモチーフ
+        "df": df,                                   # データフレーム
     }
 
 
@@ -195,6 +275,8 @@ def preprocess_data(
     '''
 
     # Getting motif information from the sequences
+    # 各データフレームについて、モチーフとFASTAファイルを生成する。
+    # train,test,train_shuffled には辞書型が返されている。
     train = generate_motifs_and_fastas(df_train, "train", number_of_sequences_to_motif_creation, subset_list)
     test = generate_motifs_and_fastas(df_test, "test", number_of_sequences_to_motif_creation, subset_list)
     train_shuffled = generate_motifs_and_fastas(
@@ -204,7 +286,11 @@ def preprocess_data(
         subset_list,
     )
 
-    combined_dict = {"train": train, "test": test, "train_shuffled": train_shuffled}
+    # 辞書に辞書を格納する。
+    combined_dict = {"train": train,                    # トレーニングデータセットに関する情報が格納された辞書
+                     "test": test,                      # テストデータセットに関する情報が格納された辞書
+                     "train_shuffled": train_shuffled   # シャッフルデータセットに関する情報が格納された辞書
+                     }
 
     # Writing to pickle
     if save_output:
