@@ -9,19 +9,21 @@ from dnadiffusion.utils.train_util import TrainLoop
 def train():
     accelerator = Accelerator(split_batches=True, log_with=["wandb"], mixed_precision="bf16")
 
+    # データの読み込み。load_data関数はdnadiffusion/data/dataloader.pyに定義されている。
+    # train,test,shuffleのそれぞれのモチーフ、セルタイプ特有のモチーフ、セルタイプなどが格納されている。
     data = load_data(
-        data_path="src/dnadiffusion/data/K562_hESCT0_HepG2_GM12878_12k_sequences_per_group.txt",
-        saved_data_path="src/dnadiffusion/data/encode_data.pkl",
-        # サブセットリスト。読み込むデータには以下4つのセルタイプタグが含まれる。それを全て指定して訓練データとしている。
+        data_path="data/Combined_4R_dataframe.txt",
+        saved_data_path="dnadiffusion/data/encode_data.pkl",
+
+        # サブセットリスト。読み込むデータには以下2つのタグが含まれる。それを全て指定して訓練データとしている。
         subset_list=[
-            "GM12878_ENCLB441ZZZ",
-            "hESCT0_ENCLB449ZZZ",
-            "K562_ENCLB843GMH",
-            "HepG2_ENCLB029COU",
+            "A_4R",
+            "B_4R",
         ],
         # 0にすると全てのデータを使う。1000にすると1000個のデータを使う。
         limit_total_sequences=0,
-        # どういう変数？
+
+        # dnadiffusion/data/dataloader.pyのsave_fasta関数を参照。
         num_sampling_to_compare_cells=1000,
         load_saved_data=True,
     )
@@ -42,14 +44,14 @@ def train():
         data=data,
         model=diffusion,
         accelerator=accelerator,
-        epochs=10000,
+        epochs=1000,
         log_step_show=50,
-        sample_epoch=500,
-        save_epoch=500,
-        model_name="model_48k_sequences_per_group_K562_hESCT0_HepG2_GM12878_12k",
+        sample_epoch=50,
+        save_epoch=50,
+        model_name="model_200k_A_B_4R",
         image_size=200,
         num_sampling_to_compare_cells=1000,
-        batch_size=960,
+        batch_size=480,
     ).train_loop()
 
 

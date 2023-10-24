@@ -1,0 +1,117 @@
+{
+    "os": "Linux-5.10.0-21-amd64-x86_64-with-glibc2.31",
+    "python": "3.10.12",
+    "heartbeatAt": "2023-10-19T08:56:18.465181",
+    "startedAt": "2023-10-19T08:56:17.913760",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/home/sato-lab.org/hidenori/Rafusion/src/train.py",
+    "codePath": "src/train.py",
+    "git": {
+        "remote": "https://github.com/20EirinAJ/RNA-Diffusion.git",
+        "commit": "8516f682ebabd02649d538fae6799373e1c25f7b"
+    },
+    "email": null,
+    "root": "/home/sato-lab.org/hidenori/Rafusion",
+    "host": "diamond",
+    "username": "hidenori",
+    "executable": "/home/sato-lab.org/hidenori/anaconda3/envs/dnadiffusion/bin/python",
+    "cpu_count": 16,
+    "cpu_count_logical": 16,
+    "cpu_freq": {
+        "current": 1.6271250000000002,
+        "min": 1500.0,
+        "max": 3310.5460000000003
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 3.292,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.464,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.502,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.498,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.498,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.499,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.498,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.499,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.498,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.497,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.498,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.499,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.498,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.499,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.797,
+            "min": 1500.0,
+            "max": 3310.546
+        },
+        {
+            "current": 1.498,
+            "min": 1500.0,
+            "max": 3310.546
+        }
+    ],
+    "disk": {
+        "total": 877.710750579834,
+        "used": 43.73552322387695
+    },
+    "memory": {
+        "total": 125.6766586303711
+    }
+}

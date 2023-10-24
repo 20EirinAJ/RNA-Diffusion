@@ -11,13 +11,10 @@ def sample(model_path: str, num_samples: int = 1000, heatmap: bool = False):
     # Instantiating data and model
     print("Loading data")
     encode_data = load_data(
-        data_path="src/dnadiffusion/data/K562_hESCT0_HepG2_GM12878_12k_sequences_per_group.txt",
-        saved_data_path="src/dnadiffusion/data/encode_data.pkl",
+        data_path="data/Combined_4R_dataframe.txt",
+        saved_data_path="dnadiffusion/data/encode_data.pkl",
         subset_list=[
-            "GM12878_ENCLB441ZZZ",
-            "hESCT0_ENCLB449ZZZ",
-            "K562_ENCLB843GMH",
-            "HepG2_ENCLB029COU",
+            "A_4R",
         ],
         limit_total_sequences=0,
         num_sampling_to_compare_cells=1000,

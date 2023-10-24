@@ -1,0 +1,15 @@
+/home/sato-lab.org/hidenori/anaconda3/envs/dnadiffusion/lib/python3.10/site-packages/torch/utils/data/dataloader.py:560: UserWarning: This DataLoader will create 8 worker processes in total. Our suggested max number of worker in current system is 1, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(_create_warning_msg(
+wandb: Currently logged in as: 20aj119. Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.15.12 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.15.8
+wandb: Run data is saved locally in /home/sato-lab.org/hidenori/Rafusion/src/wandb/run-20231019_174115-bq41akma
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run giddy-elevator-42
+wandb: ⭐️ View project at https://wandb.ai/20aj119/dnadiffusion
+wandb: 🚀 View run at https://wandb.ai/20aj119/dnadiffusion/runs/bq41akma
+  0%|          | 0/10000 [00:00<?, ?it/s]/home/sato-lab.org/hidenori/anaconda3/envs/dnadiffusion/lib/python3.10/site-packages/torch/utils/data/dataloader.py:560: UserWarning: This DataLoader will create 8 worker processes in total. Our suggested max number of worker in current system is 1, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(_create_warning_msg(
+/var/lib/slurm/slurmd/job00425/slurm_script: line 6: 101028 Killed                  python train.py
+slurmstepd-diamond: error: Detected 1 oom-kill event(s) in StepId=425.batch cgroup. Some of your processes may have been killed by the cgroup out-of-memory handler.

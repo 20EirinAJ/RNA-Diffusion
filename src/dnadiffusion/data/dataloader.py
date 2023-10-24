@@ -1,26 +1,36 @@
 import os
 import pickle
 import random
+import logging
 from typing import Any, Dict, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 import torch
 import torchvision.transforms as T
 from torch.utils.data import DataLoader, Dataset
 
 from dnadiffusion.utils.utils import one_hot_encode
 
+# ロガーの設定
+logging.basicConfig(filename='logfile.log', level=logging.INFO)
+
+
 
 def load_data(
-    data_path: str = "K562_hESCT0_HepG2_GM12878_12k_sequences_per_group.txt",
+    data_path: str = "Combined_4R_dataframe.txt",
     saved_data_path: str = "encode_data.pkl",
     subset_list: List = [
+        "A_4R",
+        "B_4R",
+        """
         "GM12878_ENCLB441ZZZ",
         "hESCT0_ENCLB449ZZZ",
         "K562_ENCLB843GMH",
         "HepG2_ENCLB029COU",
+        """
     ],
     limit_total_sequences: int = 0,
     num_sampling_to_compare_cells: int = 1000,
@@ -92,6 +102,22 @@ def load_data(
         "X_train": X_train,
         "x_train_cell_type": x_train_cell_type,
     }
+
+    """encode_data_dict には、以下のようなデータが格納されている。
+    load_data関数が前処理して、データセットは結局、以下の2点のみを使用して作った
+    ・シーケンスデータ
+    ・TAG(各シーケンスがどのセルタイプにあったかを表す)
+
+    :??_motifs: gimmescanを使って計算された全モチーフ
+    :??_motifs_cell_specific: 各セルタイプに特有のモチーフ
+    :tag_to_numeric: タグを数値に変換する辞書
+    :numeric_to_tag: 数値をタグに変換する辞書
+    :cell_types: セルタイプのリスト
+    :X_train: OneHotしたトレーニングデータセットのシーケンスデータ
+    :x_train_cell_type: トレーニングデータセットのセルタイプ
+    """
+
+
 
     # シーケンスデータセットと関連情報を含む辞書を返す
     return encode_data_dict
@@ -168,7 +194,7 @@ def save_fasta(df: pd.DataFrame, name: str, num_sequences: int, seq_to_subset_co
     # FASTA形式のエントリーを作成しています。各エントリーは > で始まり、
     # シーケンス名やタグ、実際のシーケンスデータを含みます。
     write_fasta_component = "\n".join(
-        df[["dhs_id", "sequence", "TAG"]]
+        df[["sequence_id", "sequence", "TAG"]]
         .head(num_to_sample)
         .apply(lambda x: f">{x[0]}_TAG_{x[2]}\n{x[1]}", axis=1)
         .values.tolist()
@@ -229,6 +255,19 @@ def generate_motifs_and_fastas(
         "df": df,                                   # データフレーム
     }
 
+# Function to perform stratified sampling based on proportions
+def stratified_sampling(df, test_prop, train_prop):
+    # Split into test and temp (train + train_shuffled) datasets
+    df_temp, df_test = train_test_split(df, test_size=test_prop, random_state=42, shuffle=True)
+    
+    # Calculate the proportion of train data relative to (train + train_shuffled)
+    actual_train_prop = train_prop / (1 - test_prop)
+    
+    # Split temp into train and train_shuffled datasets
+    df_train, df_train_shuffled = train_test_split(df_temp, test_size=(1 - actual_train_prop), random_state=42, shuffle=True)
+    
+    return df_train, df_train_shuffled, df_test
+
 
 def preprocess_data(
     input_csv: str,
@@ -253,6 +292,9 @@ def preprocess_data(
         print(f"Limiting total sequences to {limit_total_sequences}")
         df = df.sample(limit_total_sequences)
 
+    # このshuffled_dfを作成する工程を少し変更する。
+
+    """
     # Creating train/test/shuffle groups
     # chr 列が "chr1" であるすべての行を抽出して新しいデータフレーム df_test を作成します。
     df_test = df[df["chr"] == "chr1"].reset_index(drop=True)
@@ -267,6 +309,34 @@ def preprocess_data(
     df_train_shuffled["sequence"] = df_train_shuffled["sequence"].apply(
         lambda x: "".join(random.sample(list(x), len(x)))
     )
+
+
+    """
+    # Filter data by TAG to perform stratified sampling
+    # アプタマーのデータに対応した抽出方法
+    df_A_4R = df[df['TAG'] == 'A_4R']
+    df_B_4R = df[df['TAG'] == 'B_4R']
+
+    # Define the proportion s for the splits
+    # train,test,train_shuffled に分割する割合を定義する。
+    test_prop = 0.09
+    train_prop = 0.08
+    train_shuffle_prop = 0.81 # Remaining proportion will automatically become this
+
+    # Perform stratified sampling for each TAG
+    df_train_A_4R, df_train_shuffled_A_4R, df_test_A_4R = stratified_sampling(df_A_4R, test_prop, train_prop)
+    df_train_B_4R, df_train_shuffled_B_4R, df_test_B_4R = stratified_sampling(df_B_4R, test_prop, train_prop)
+
+    # Combine the TAG-specific datasets to create the final datasets
+    df_train = pd.concat([df_train_A_4R, df_train_B_4R]).reset_index(drop=True)
+    df_train_shuffled = pd.concat([df_train_shuffled_A_4R, df_train_shuffled_B_4R]).reset_index(drop=True)
+    df_test = pd.concat([df_test_A_4R, df_test_B_4R]).reset_index(drop=True)
+
+    # Shuffle the 'sequence' column in df_train_shuffled
+    df_train_shuffled["sequence"] = df_train_shuffled["sequence"].apply(
+        lambda x: "".join(random.sample(list(x), len(x)))
+    )
+
     '''
     df_train_shuffledについて
     バックグラウンドモデルがあれば、観測されたデータ（例えば、特定のモチーフが特定の領域に集中している、
@@ -286,6 +356,9 @@ def preprocess_data(
         subset_list,
     )
 
+    # 生成されたデータをロガーに記録
+    logging.info(f"Train data: {train}")
+
     # 辞書に辞書を格納する。
     combined_dict = {"train": train,                    # トレーニングデータセットに関する情報が格納された辞書
                      "test": test,                      # テストデータセットに関する情報が格納された辞書
@@ -295,7 +368,7 @@ def preprocess_data(
     # Writing to pickle
     if save_output:
         # Saving all train, test, train_shuffled dictionaries to pickle
-        with open("src/dnadiffusion/data/encode_data.pkl", "wb") as f:
+        with open("encode_data.pkl", "wb") as f:
             pickle.dump(combined_dict, f)
 
     return combined_dict
