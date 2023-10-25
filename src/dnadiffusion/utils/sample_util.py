@@ -34,6 +34,7 @@ def create_sample(
 
         if generate_attention_maps:
             sampled_images, cross_att_values = diffusion_model.sample_cross(
+            # (sample_bs, 1, 200)のところが生成する配列の長さなどの設定。cond_weight_to_metricは条件にどれくらい寄せるか。
                 classes, (sample_bs, 1, 4, 200), cond_weight_to_metric
             )
             # save cross attention maps in a numpy array
