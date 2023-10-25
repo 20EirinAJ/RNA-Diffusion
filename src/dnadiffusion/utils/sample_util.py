@@ -22,6 +22,7 @@ def create_sample(
 ):
     nucleotides = ["A", "C", "G", "T"]
     final_sequences = []
+    # ここでdiffusion_modelがサンプルを生成してる。
     for n_a in tqdm(range(number_of_samples)):
         sample_bs = 10
         if group_number:
